@@ -1,13 +1,13 @@
 # PROJECT_STATE
 
-**Current:** Phase 1.1 verified (CI green, pushed to github.com/Chendy1/elimuai). Phase 1.2 delivered, awaiting verification.
-**Next:** Phase 2.1 (guardian registration, login, sessions). Phase 0.2-0.4 spikes run in parallel as inputs arrive.
+**Current:** Phase 2.1 (backend auth API) delivered, awaiting verification. 2.1 is split: 2.1a backend (this delivery), 2.1b sign-in/registration pages.
+**Next:** 2.1b frontend forms, then 2.2 learner profiles and consent.
 
 ## Pinned versions
 Python 3.12 · Node 22 · PostgreSQL 16 (pgvector/pgvector:pg16) · FastAPI 0.115.6 · SQLAlchemy 2.0.36 · Alembic 1.14.0 · Next.js 15.1.3 · React 19.0.0 · Tailwind 3.4.17
 
 ## Decisions
-ADR 0001 cookie sessions · ADR 0002 no Redis/Celery yet · ADR 0003 provider adapters
+ADR 0001 cookie sessions · ADR 0002 no Redis/Celery yet · ADR 0003 provider adapters · ADR 0004 in-process rate limiting
 
 ## Verification status
 - 1.1: GitHub Actions CI green (backend ruff, alembic upgrade, pytest; frontend lint, typecheck, vitest, build).
@@ -21,14 +21,13 @@ ADR 0001 cookie sessions · ADR 0002 no Redis/Celery yet · ADR 0003 provider ad
 - AI cost ceiling per active learner per month (placeholder USD 0.10)
 
 ## Open issues
-None yet.
+- Roles: users table has no role column yet; Phase 2.3 adds roles and backfills existing guardians.
+- Email verification not built; production email provider needed before launch (app refuses to send in production).
+- Auth tests use a separate database `<name>_test`, created automatically.
+- Phase 1.2 PR: CI result not yet reported by owner.
 
 ## Compliance tracker
 KICD permission: not started · DPAs: not started · DPIA: not started
 
 ## Quality gates (actuals)
 Not measured yet.
-
-## Notes (Phase 1.2)
-- Playwright e2e runs against a production build on port 3100 so it cannot clash with Docker or a dev server on 3000.
-- 1.2 verified locally: lint, typecheck, vitest (3), playwright (6). CI result pending.
