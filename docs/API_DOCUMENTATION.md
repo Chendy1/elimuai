@@ -15,3 +15,16 @@ Authentication uses an httpOnly `elimu_session` cookie. State-changing authentic
 
 Password rules: 10 to 128 characters, not a common password, not the email address.
 Development email: reset links are printed to the backend log (`docker compose logs backend`).
+
+## Learners (Phase 2.2a)
+
+All require a session; POST, PATCH and DELETE also need `X-CSRF-Token`. Another guardian's learner always returns 404.
+
+| Method and path | Result |
+|---|---|
+| GET `/learners/consent-notice` | public; current notice `{version, title, text, is_draft}` (draft placeholder) |
+| GET `/learners` | your active learners |
+| POST `/learners` | body `{nickname, grade 4-9, consent:{notice_version, accepted:true}}` -> 201; 409 notice changed, limit (6) or duplicate nickname; 422 invalid |
+| GET `/learners/{id}` | one learner or 404 |
+| PATCH `/learners/{id}` | `{nickname?, grade?}` |
+| DELETE `/learners/{id}` | 204; soft delete and consent withdrawn |
