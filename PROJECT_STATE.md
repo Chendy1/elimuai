@@ -1,13 +1,13 @@
 # PROJECT_STATE
 
-**Current:** Phase 2.1b (guardian sign-in/registration/reset/account pages) delivered, awaiting verification. 2.1a verification result not yet reported by owner.
-**Next:** 2.2 learner profiles and guardian consent.
+**Current:** Phase 2.2a (learners and consent, backend) delivered, awaiting verification. Phases 1.1, 1.2, 2.1a verified; 2.1b CI green and manually checked.
+**Next:** 2.2b guardian pages (add/edit/remove learner, consent notice), then 2.3 roles and RBAC.
 
 ## Pinned versions
 Python 3.12 · Node 22 · PostgreSQL 16 (pgvector/pgvector:pg16) · FastAPI 0.115.6 · SQLAlchemy 2.0.36 · Alembic 1.14.0 · Next.js 15.1.3 · React 19.0.0 · Tailwind 3.4.17
 
 ## Decisions
-ADR 0001 cookie sessions · ADR 0002 no Redis/Celery yet · ADR 0003 provider adapters · ADR 0004 in-process rate limiting · ADR 0005 same-origin API proxy
+ADR 0001 cookie sessions · ADR 0002 no Redis/Celery yet · ADR 0003 provider adapters · ADR 0004 in-process rate limiting · ADR 0005 same-origin API proxy · ADR 0006 guardian-managed learners
 
 ## Verification status
 - 1.1: GitHub Actions CI green (backend ruff, alembic upgrade, pytest; frontend lint, typecheck, vitest, build).
@@ -27,7 +27,7 @@ ADR 0001 cookie sessions · ADR 0002 no Redis/Celery yet · ADR 0003 provider ad
 - Phase 1.2 PR: CI result not yet reported by owner.
 
 ## Compliance tracker
-KICD permission: not started · DPAs: not started · DPIA: not started
+Consent notice text: DRAFT placeholder in app/consent.py (needs legal review + DPIA) · KICD permission: not started · DPAs: not started · DPIA: not started
 
 ## Quality gates (actuals)
 Not measured yet.

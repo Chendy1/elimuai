@@ -1,4 +1,7 @@
 # Changelog
+## 0.5.0 (Phase 2.2a)
+- Learner profiles and versioned consent records: /learners API, migration 0003, ownership isolation, limits, tests, ADR 0006.
+
 ## 0.4.0 (Phase 2.1b)
 - Pages: register, login, forgot/reset password, account; /api proxy (ADR 0005); client validation; unit and Playwright tests (API mocked).
 
