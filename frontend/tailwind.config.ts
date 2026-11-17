@@ -13,6 +13,10 @@ const config: Config = {
         ink: "#202B27",
         muted: "#68746D",
       },
+      fontFamily: {
+        sans: ["var(--font-sans)", "system-ui", "Segoe UI", "sans-serif"],
+      },
+      boxShadow: { card: "0 1px 2px rgba(16,57,46,0.06), 0 4px 16px rgba(16,57,46,0.06)" },
     },
   },
   plugins: [],
