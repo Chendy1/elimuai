@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
-html { font-size: 17px; }
-body { background: #FAF8F1; color: #202B27; font-family: system-ui, "Segoe UI", sans-serif; }
+html { font-size: 17px; scroll-behavior: smooth; }
+body { background: #FAF8F1; color: #202B27; }
 :focus-visible { outline: 3px solid #D5AE62; outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { animation: none !important; transition: none !important; }
+}
