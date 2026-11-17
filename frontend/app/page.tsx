@@ -42,7 +42,7 @@ const FAQ = [
   },
   {
     q: "Can I use it today?",
-    a: "Not yet. This site is under development and learner registration is not open.",
+    a: "Not yet. Parents and guardians can create an account, but learner profiles and lessons are still being built.",
   },
 ];
 

@@ -23,11 +23,11 @@ test("navigation reaches How it works", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 2, name: "How it works" })).toBeVisible();
 });
 
-test("primary call to action leads to the honest start page", async ({ page }) => {
+test("primary call to action leads to the guardian account page", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("link", { name: /^Start Learning/ }).click();
   await expect(page).toHaveURL(/\/start$/);
-  await expect(page.getByRole("heading", { name: "Registration is not open yet" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Create a guardian account" })).toBeVisible();
 });
 
 test("privacy and terms are clearly marked as placeholders", async ({ page }) => {

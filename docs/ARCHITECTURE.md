@@ -1,7 +1,7 @@
 # Architecture (Phase 1.1)
 
 ```
-Browser ── Next.js (3000) ──HTTP──▶ FastAPI (8000) ──▶ PostgreSQL 16 + pgvector (5432)
+Browser ──▶ Next.js (3000)  ──/api/* proxy (ADR 0005)──▶ FastAPI (8000) ──▶ PostgreSQL 16 + pgvector (5432)
 ```
 
 - `frontend/`: Next.js 15, React 19, TypeScript, Tailwind 3. Brand colours defined in `tailwind.config.ts`.
