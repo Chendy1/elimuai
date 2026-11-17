@@ -1,5 +1,7 @@
 # API (Phase 2.1). Interactive docs: http://localhost:8000/docs
 
+From the browser, every path below is prefixed with `/api` (for example `/api/auth/login`) and proxied to the backend.
+
 Authentication uses an httpOnly `elimu_session` cookie. State-changing authenticated requests must send the header `X-CSRF-Token` (value returned by login and `/auth/me`).
 
 | Method and path | Auth | Result |

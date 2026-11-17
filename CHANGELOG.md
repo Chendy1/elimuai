@@ -1,4 +1,7 @@
 # Changelog
+## 0.4.0 (Phase 2.1b)
+- Pages: register, login, forgot/reset password, account; /api proxy (ADR 0005); client validation; unit and Playwright tests (API mocked).
+
 ## 0.3.0 (Phase 2.1a)
 - Guardian auth API: register, login, logout, me, password reset; users/sessions/reset-token tables (migration 0002); Argon2id; CSRF; rate limiting; ADR 0004.
 

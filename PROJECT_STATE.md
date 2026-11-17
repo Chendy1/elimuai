@@ -1,13 +1,13 @@
 # PROJECT_STATE
 
-**Current:** Phase 2.1 (backend auth API) delivered, awaiting verification. 2.1 is split: 2.1a backend (this delivery), 2.1b sign-in/registration pages.
-**Next:** 2.1b frontend forms, then 2.2 learner profiles and consent.
+**Current:** Phase 2.1b (guardian sign-in/registration/reset/account pages) delivered, awaiting verification. 2.1a verification result not yet reported by owner.
+**Next:** 2.2 learner profiles and guardian consent.
 
 ## Pinned versions
 Python 3.12 · Node 22 · PostgreSQL 16 (pgvector/pgvector:pg16) · FastAPI 0.115.6 · SQLAlchemy 2.0.36 · Alembic 1.14.0 · Next.js 15.1.3 · React 19.0.0 · Tailwind 3.4.17
 
 ## Decisions
-ADR 0001 cookie sessions · ADR 0002 no Redis/Celery yet · ADR 0003 provider adapters · ADR 0004 in-process rate limiting
+ADR 0001 cookie sessions · ADR 0002 no Redis/Celery yet · ADR 0003 provider adapters · ADR 0004 in-process rate limiting · ADR 0005 same-origin API proxy
 
 ## Verification status
 - 1.1: GitHub Actions CI green (backend ruff, alembic upgrade, pytest; frontend lint, typecheck, vitest, build).

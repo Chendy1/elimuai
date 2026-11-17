@@ -3,8 +3,6 @@
 import { useEffect, useState } from "react";
 import { toApiState, type ApiState } from "@/lib/status";
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-
 const LABELS: Record<ApiState, string> = {
   checking: "Checking…",
   online: "Backend and database connected",
@@ -15,7 +13,7 @@ export default function ApiStatus() {
   const [state, setState] = useState<ApiState>("checking");
 
   useEffect(() => {
-    fetch(`${API}/health/ready`)
+    fetch("/api/health/ready")
       .then((r) => setState(toApiState(r.ok)))
       .catch(() => setState(toApiState(false)));
   }, []);
