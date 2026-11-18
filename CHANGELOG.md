@@ -1,4 +1,7 @@
 # Changelog
+## 0.7.0 (Phase 2.3a)
+- RBAC: roles, user_roles, permission matrix, require_permission; audit_logs; /admin API; create-superadmin CLI; migration 0004; ADR 0007.
+
 ## 0.6.0 (Phase 2.2b)
 - /learners page: list, add (with consent notice and checkbox), edit, remove with confirmation; account link; unit and Playwright tests; helper scripts.
 

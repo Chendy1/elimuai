@@ -1,13 +1,13 @@
 # PROJECT_STATE
 
-**Current:** Phase 2.2b (guardian learner pages) delivered, awaiting verification. 2.2a: PR #4 CI green (merge status to be confirmed by owner).
-**Next:** 2.3 roles and RBAC (user_roles, permission matrix, audit logs), then 2.4 learner onboarding.
+**Current:** Phase 2.3a (roles, RBAC, audit log, admin API, super-admin CLI) delivered, awaiting verification. 2.2b delivered; owner to confirm e2e, manual check and merge.
+**Next:** 2.3b admin pages (users and roles, audit log), then 2.4 learner onboarding.
 
 ## Pinned versions
 Python 3.12 · Node 22 · PostgreSQL 16 (pgvector/pgvector:pg16) · FastAPI 0.115.6 · SQLAlchemy 2.0.36 · Alembic 1.14.0 · Next.js 15.1.3 · React 19.0.0 · Tailwind 3.4.17
 
 ## Decisions
-ADR 0001 cookie sessions · ADR 0002 no Redis/Celery yet · ADR 0003 provider adapters · ADR 0004 in-process rate limiting · ADR 0005 same-origin API proxy · ADR 0006 guardian-managed learners
+ADR 0001 cookie sessions · ADR 0002 no Redis/Celery yet · ADR 0003 provider adapters · ADR 0004 in-process rate limiting · ADR 0005 same-origin API proxy · ADR 0006 guardian-managed learners · ADR 0007 RBAC matrix in code
 
 ## Verification status
 - 1.1: GitHub Actions CI green (backend ruff, alembic upgrade, pytest; frontend lint, typecheck, vitest, build).
@@ -21,7 +21,7 @@ ADR 0001 cookie sessions · ADR 0002 no Redis/Celery yet · ADR 0003 provider ad
 - AI cost ceiling per active learner per month (placeholder USD 0.10)
 
 ## Open issues
-- Roles: users table has no role column yet; Phase 2.3 adds roles and backfills existing guardians.
+- Staff invitations by email not built; admins promote registered users (ADR 0007).
 - Email verification not built; production email provider needed before launch (app refuses to send in production).
 - Auth tests use a separate database `<name>_test`, created automatically.
 - Phase 1.2 PR: CI result not yet reported by owner.

@@ -1,4 +1,4 @@
-# Database schema (as of migration 0003)
+# Database schema (as of migration 0004)
 
 | Table | Purpose | Notes |
 |---|---|---|
@@ -7,5 +7,8 @@
 | `password_reset_tokens` | One-time reset links | Only token hash stored; 30-minute expiry; single use. |
 | `learners` | Guardian-managed learner profiles | nickname, grade 4-9 (check constraint); unique nickname per guardian among non-deleted (partial index); soft delete. |
 | `consent_records` | Consent evidence | notice version, SHA-256 of the text shown, accepted_at, withdrawn_at. |
+| `roles` | The seven platform roles | Seeded by migration; mirrors `ALL_ROLES` in code (tested). |
+| `user_roles` | Role assignments | Composite key (user, role). Existing users were backfilled as `guardian`. |
+| `audit_logs` | Who did what and when | actor, action, target, JSONB details. No secrets, no children's names. |
 
-Migrations: `0001` enables pgvector, `0002` creates users, sessions and reset tokens, `0003` creates learners and consent records. Constraint and index names follow the naming convention in `app/models/base.py`.
+Migrations: `0001` enables pgvector, `0002` creates users, sessions and reset tokens, `0003` creates learners and consent records, `0004` creates roles, user_roles and audit_logs. Constraint and index names follow the naming convention in `app/models/base.py`.

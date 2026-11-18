@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+import uuid
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import delete, select, update
@@ -6,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
+from app.core.permissions import GUARDIAN
 from app.core.security import (
     dummy_hash,
     hash_password,
@@ -14,7 +16,8 @@ from app.core.security import (
     password_needs_rehash,
     verify_password,
 )
-from app.models import AuthSession, PasswordResetToken, User
+from app.models import AuthSession, PasswordResetToken, User, UserRole
+from app.services import audit
 
 LAST_SEEN_REFRESH = timedelta(minutes=5)
 
@@ -27,6 +30,7 @@ class EmailAlreadyRegistered(Exception):
 class AuthContext:
     user: User
     session: AuthSession
+    roles: list[str] = field(default_factory=list)
 
 
 def utcnow() -> datetime:
@@ -50,6 +54,11 @@ def create_user(db: Session, *, email: str, password: str, display_name: str) ->
     user = User(email=email, password_hash=hash_password(password), display_name=display_name.strip())
     db.add(user)
     try:
+        db.flush()
+        db.add(UserRole(user_id=user.id, role_name=GUARDIAN))
+        audit.record(
+            db, actor_id=user.id, action="user.registered", target_type="user", target_id=str(user.id)
+        )
         db.commit()
     except IntegrityError as exc:  # lost a race with another registration
         db.rollback()
@@ -154,5 +163,17 @@ def consume_reset_token(db: Session, raw_token: str, new_password: str) -> bool:
         .where(AuthSession.user_id == user.id, AuthSession.revoked_at.is_(None))
         .values(revoked_at=now)
     )
+    audit.record(
+        db, actor_id=user.id, action="auth.password_reset_completed",
+        target_type="user", target_id=str(user.id),
+    )
     db.commit()
     return True
+
+
+def get_roles(db: Session, user_id: uuid.UUID) -> list[str]:
+    return list(
+        db.scalars(
+            select(UserRole.role_name).where(UserRole.user_id == user_id).order_by(UserRole.role_name)
+        )
+    )
