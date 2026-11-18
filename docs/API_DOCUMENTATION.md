@@ -42,3 +42,20 @@ All require a session; POST, PATCH and DELETE also need `X-CSRF-Token`. Another 
 
 Create the first super administrator (prompts for a password):
 `docker compose exec -it backend python -m app.cli create-superadmin --email you@example.com`
+
+## Curriculum (Phase 3.1)
+
+Admin endpoints are under `/admin/curriculum` (structure: `curriculum:manage`; review: `content:review`; publish/archive: `content:publish`; writes need CSRF). Errors: 404 not found, 409 conflict (duplicate, read-only version, failed publish gate; publish failures return `detail: {message, details}`).
+
+| Method and path | Purpose |
+|---|---|
+| GET/POST `/curricula`, GET/POST `/curricula/{id}/versions` | curricula and draft versions |
+| POST `/versions/{id}/grades`, POST `/grades/{id}/learning-areas`, PATCH `/learning-areas/{id}` | grades, learning areas (rename, reorder, archive) |
+| POST `/learning-areas/{id}/units`, `/learning-areas/{id}/strands` | optional units, strands (with rubric) |
+| POST `/strands/{id}/sub-strands` | sub-strand with topics, outcomes, experiences, questions, competencies, values, PCIs |
+| GET `/versions/{id}/tree` | whole version with review status |
+| POST `/review` | `{kind, id, status, comment}` |
+| POST `/versions/{id}/publish`, `/archive` | publishing gates: all approved, not empty, all sources licensed |
+| GET/POST `/sources`, PATCH `/sources/{id}/license` | source documents and permission status |
+
+Learner reads (signed in, published only): GET `/curriculum/grades`, `/curriculum/grades/{level}/learning-areas`, `/curriculum/learning-areas/{id}`.

@@ -1,13 +1,13 @@
 # PROJECT_STATE
 
-**Current:** Phase 2.3a (roles, RBAC, audit log, admin API, super-admin CLI) delivered, awaiting verification. 2.2b delivered; owner to confirm e2e, manual check and merge.
-**Next:** 2.3b admin pages (users and roles, audit log), then 2.4 learner onboarding.
+**Current:** Phase 3.1 (curriculum schema, review workflow, publishing gates, API) delivered, awaiting verification. 2.3a merged (PR #6), super admin created.
+**Next:** 3.2 importer (register PDF source, store page text with pdf and printed page numbers, propose draft records), then 3.3 review screens.
 
 ## Pinned versions
 Python 3.12 · Node 22 · PostgreSQL 16 (pgvector/pgvector:pg16) · FastAPI 0.115.6 · SQLAlchemy 2.0.36 · Alembic 1.14.0 · Next.js 15.1.3 · React 19.0.0 · Tailwind 3.4.17
 
 ## Decisions
-ADR 0001 cookie sessions · ADR 0002 no Redis/Celery yet · ADR 0003 provider adapters · ADR 0004 in-process rate limiting · ADR 0005 same-origin API proxy · ADR 0006 guardian-managed learners · ADR 0007 RBAC matrix in code
+ADR 0001 cookie sessions · ADR 0002 no Redis/Celery yet · ADR 0003 provider adapters · ADR 0004 in-process rate limiting · ADR 0005 same-origin API proxy · ADR 0006 guardian-managed learners · ADR 0007 RBAC matrix in code · ADR 0008 curriculum model and publishing gates
 
 ## Verification status
 - 1.1: GitHub Actions CI green (backend ruff, alembic upgrade, pytest; frontend lint, typecheck, vitest, build).
@@ -27,7 +27,7 @@ ADR 0001 cookie sessions · ADR 0002 no Redis/Celery yet · ADR 0003 provider ad
 - Phase 1.2 PR: CI result not yet reported by owner.
 
 ## Compliance tracker
-Consent notice text: DRAFT placeholder in app/consent.py (needs legal review + DPIA) · KICD permission: not started · DPAs: not started · DPIA: not started
+Consent notice text: DRAFT placeholder in app/consent.py (needs legal review + DPIA) · KICD permission: NOT requested yet. Source PDFs received (Grade 6 Mathematics 2024 revision; Grade 6 English), kept in git-ignored data/sources. Publishing is blocked in code until a source's licence_status is granted · DPAs: not started · DPIA: not started
 
 ## Quality gates (actuals)
 Not measured yet.

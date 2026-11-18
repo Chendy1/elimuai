@@ -1,4 +1,7 @@
 # Changelog
+## 0.8.0 (Phase 3.1)
+- Curriculum engine: versions, grades, learning areas, optional units, strands, sub-strands and content, rubrics, sources with licence status; review workflow; publishing gates; admin and learner APIs; migration 0005; ADR 0008.
+
 ## 0.7.0 (Phase 2.3a)
 - RBAC: roles, user_roles, permission matrix, require_permission; audit_logs; /admin API; create-superadmin CLI; migration 0004; ADR 0007.
 

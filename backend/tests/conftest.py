@@ -69,7 +69,7 @@ def outbox() -> FakeEmailSender:
 @pytest.fixture
 def client(db_engine, outbox):
     with db_engine.begin() as conn:
-        conn.execute(text("TRUNCATE audit_logs, consent_records, learners, password_reset_tokens, sessions, user_roles, users CASCADE"))
+        conn.execute(text("TRUNCATE audit_logs, consent_records, learners, password_reset_tokens, sessions, user_roles, users, curricula, curriculum_sources, curriculum_values, pertinent_contemporary_issues CASCADE"))
     limiter.reset()
     factory = sessionmaker(bind=db_engine, autoflush=False, expire_on_commit=False)
 

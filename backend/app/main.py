@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import admin, auth, health, learners
+from app.api import admin, auth, curriculum, curriculum_admin, health, learners
 from app.core.config import get_settings
 
 
@@ -19,6 +19,8 @@ def create_app() -> FastAPI:
     app.include_router(auth.router)
     app.include_router(learners.router)
     app.include_router(admin.router)
+    app.include_router(curriculum_admin.router)
+    app.include_router(curriculum.router)
     return app
 
 
