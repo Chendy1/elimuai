@@ -18,3 +18,12 @@ export function validatePassword(password: string, email?: string): string | nul
   }
   return null;
 }
+
+export function validateNickname(value: string): string | null {
+  const v = value.trim();
+  if (v.length < 1 || v.length > 50) return "Nickname must be 1 to 50 characters.";
+  if (v.includes("@") || /\d{6,}/.test(v)) {
+    return "Please use a nickname only: no email addresses or phone numbers.";
+  }
+  return null;
+}

@@ -1,4 +1,7 @@
 # Changelog
+## 0.6.0 (Phase 2.2b)
+- /learners page: list, add (with consent notice and checkbox), edit, remove with confirmation; account link; unit and Playwright tests; helper scripts.
+
 ## 0.5.0 (Phase 2.2a)
 - Learner profiles and versioned consent records: /learners API, migration 0003, ownership isolation, limits, tests, ADR 0006.
 
