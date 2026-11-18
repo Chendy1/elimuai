@@ -1,7 +1,7 @@
 # PROJECT_STATE
 
-**Current:** Phase 2.2a (learners and consent, backend) delivered, awaiting verification. Phases 1.1, 1.2, 2.1a verified; 2.1b CI green and manually checked.
-**Next:** 2.2b guardian pages (add/edit/remove learner, consent notice), then 2.3 roles and RBAC.
+**Current:** Phase 2.2b (guardian learner pages) delivered, awaiting verification. 2.2a: PR #4 CI green (merge status to be confirmed by owner).
+**Next:** 2.3 roles and RBAC (user_roles, permission matrix, audit logs), then 2.4 learner onboarding.
 
 ## Pinned versions
 Python 3.12 · Node 22 · PostgreSQL 16 (pgvector/pgvector:pg16) · FastAPI 0.115.6 · SQLAlchemy 2.0.36 · Alembic 1.14.0 · Next.js 15.1.3 · React 19.0.0 · Tailwind 3.4.17

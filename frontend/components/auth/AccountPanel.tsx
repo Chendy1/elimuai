@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
@@ -33,7 +34,12 @@ export default function AccountPanel() {
       <h1 className="text-3xl font-bold text-forest">Welcome, {session.user.display_name}</h1>
       <p className="text-muted">Signed in as {session.user.email}.</p>
       <p className="rounded-xl bg-sage px-4 py-3 text-deep">
-        Your guardian account is ready. Adding learners and starting lessons is coming soon.
+        Your guardian account is ready. You can add learners now. Starting lessons is coming soon.
+      </p>
+      <p>
+        <Link href="/learners" className="font-semibold text-forest underline">
+          Manage your learners
+        </Link>
       </p>
       <button
         type="button"
