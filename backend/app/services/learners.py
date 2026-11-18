@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.consent import NOTICE_VERSION, PURPOSE, notice_sha256
 from app.models import ConsentRecord, Learner, User
+from app.services import audit
 from app.services.auth import utcnow
 
 MAX_LEARNERS = 6
@@ -61,6 +62,10 @@ def create_learner(db: Session, guardian: User, nickname: str, grade: int) -> Le
                 notice_sha256=notice_sha256(),
             )
         )
+        audit.record(
+            db, actor_id=guardian.id, action="learner.created", target_type="learner",
+            target_id=str(learner.id), details={"grade": grade, "consent_version": NOTICE_VERSION},
+        )
         db.commit()
     except IntegrityError as exc:
         db.rollback()
@@ -71,10 +76,17 @@ def create_learner(db: Session, guardian: User, nickname: str, grade: int) -> Le
 def update_learner(
     db: Session, learner: Learner, nickname: str | None, grade: int | None
 ) -> Learner:
+    changed = []
     if nickname is not None:
         learner.nickname = nickname
+        changed.append("nickname")
     if grade is not None:
         learner.grade = grade
+        changed.append("grade")
+    audit.record(
+        db, actor_id=learner.guardian_id, action="learner.updated", target_type="learner",
+        target_id=str(learner.id), details={"changed": changed},
+    )
     try:
         db.commit()
     except IntegrityError as exc:
@@ -91,5 +103,9 @@ def remove_learner(db: Session, learner: Learner) -> None:
         update(ConsentRecord)
         .where(ConsentRecord.learner_id == learner.id, ConsentRecord.withdrawn_at.is_(None))
         .values(withdrawn_at=now)
+    )
+    audit.record(
+        db, actor_id=learner.guardian_id, action="learner.removed", target_type="learner",
+        target_id=str(learner.id), details={"consent_withdrawn": True},
     )
     db.commit()

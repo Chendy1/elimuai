@@ -55,6 +55,7 @@ class UserOut(BaseModel):
 class SessionResponse(BaseModel):
     user: UserOut
     csrf_token: str
+    roles: list[str] = Field(default_factory=list)
 
 
 class MessageResponse(BaseModel):

@@ -28,3 +28,17 @@ All require a session; POST, PATCH and DELETE also need `X-CSRF-Token`. Another 
 | GET `/learners/{id}` | one learner or 404 |
 | PATCH `/learners/{id}` | `{nickname?, grade?}` |
 | DELETE `/learners/{id}` | 204; soft delete and consent withdrawn |
+
+## Roles and administration (Phase 2.3a)
+
+`/auth/login` and `/auth/me` now also return `roles`. Learner endpoints require the `guardian` role (permission `learners:manage_own`); a signed-in user without it gets 403.
+
+| Method and path | Permission | Result |
+|---|---|---|
+| GET `/admin/roles` | `users:read` | role -> permissions matrix |
+| GET `/admin/users?limit&offset` | `users:read` | users with roles (limit 1-100) |
+| PUT `/admin/users/{id}/roles` | `users:manage_roles` + CSRF | body `{roles:[...]}`; 409 if it would remove the last super_admin; 422 unknown role |
+| GET `/admin/audit-logs?limit&offset&action` | `audit:read` | newest first |
+
+Create the first super administrator (prompts for a password):
+`docker compose exec -it backend python -m app.cli create-superadmin --email you@example.com`

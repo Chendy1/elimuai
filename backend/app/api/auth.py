@@ -57,12 +57,20 @@ def login(body: LoginRequest, request: Request, response: Response, db: Session 
         samesite="lax",
         path="/",
     )
-    return SessionResponse(user=UserOut.model_validate(user), csrf_token=session.csrf_token)
+    return SessionResponse(
+        user=UserOut.model_validate(user),
+        csrf_token=session.csrf_token,
+        roles=auth_service.get_roles(db, user.id),
+    )
 
 
 @router.get("/me", response_model=SessionResponse)
-def me(ctx: auth_service.AuthContext = Depends(get_session_context)):
-    return SessionResponse(user=UserOut.model_validate(ctx.user), csrf_token=ctx.session.csrf_token)
+def me(ctx: auth_service.AuthContext = Depends(get_session_context), db: Session = Depends(get_db)):
+    return SessionResponse(
+        user=UserOut.model_validate(ctx.user),
+        csrf_token=ctx.session.csrf_token,
+        roles=auth_service.get_roles(db, ctx.user.id),
+    )
 
 
 @router.post("/logout", status_code=204)
