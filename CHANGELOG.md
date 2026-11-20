@@ -1,4 +1,10 @@
 # Changelog
+## 0.10.0 (Phase 3.2b)
+- Design-table parser (Grade 6 Mathematics layout), propose_from_source service and CLI (dry run supported), synthetic layout fixtures, parser and proposer tests. CLI now explains invalid ids.
+
+## 0.9.0 (Phase 3.2a)
+- PDF source importer: pdf_text extraction, import_pdf service (idempotent by SHA-256), CLI import-source / list-sources / show-page, reviewer page-read endpoints, test PDF factory, import guide.
+
 ## 0.8.0 (Phase 3.1)
 - Curriculum engine: versions, grades, learning areas, optional units, strands, sub-strands and content, rubrics, sources with licence status; review workflow; publishing gates; admin and learner APIs; migration 0005; ADR 0008.
 
