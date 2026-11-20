@@ -1,10 +1,11 @@
 # PROJECT_STATE
 
-**Current:** Phase 3.1 (curriculum schema, review workflow, publishing gates, API) delivered, awaiting verification. 2.3a merged (PR #6), super admin created.
-**Next:** 3.2 importer (register PDF source, store page text with pdf and printed page numbers, propose draft records), then 3.3 review screens.
+**Current:** Phase 3.3 (curriculum review screens, reviewer read access, CLI create commands) delivered, awaiting verification. Owner has not yet reported results for 3.2a/3.2b.
+**Decision (owner):** KICD permission will be requested before deployment/go-live. Until then curriculum data stays in the local development database only; the publishing gate stays enforced in code. Draft letter prepared.
+**Next:** 3.2c English parser (themes layout), content editing screen, then Phase 4 (lessons and learner navigation).
 
 ## Pinned versions
-Python 3.12 · Node 22 · PostgreSQL 16 (pgvector/pgvector:pg16) · FastAPI 0.115.6 · SQLAlchemy 2.0.36 · Alembic 1.14.0 · Next.js 15.1.3 · React 19.0.0 · Tailwind 3.4.17
+Python 3.12 · pypdf 5.9.0 · Node 22 · PostgreSQL 16 (pgvector/pgvector:pg16) · FastAPI 0.115.6 · SQLAlchemy 2.0.36 · Alembic 1.14.0 · Next.js 15.1.3 · React 19.0.0 · Tailwind 3.4.17
 
 ## Decisions
 ADR 0001 cookie sessions · ADR 0002 no Redis/Celery yet · ADR 0003 provider adapters · ADR 0004 in-process rate limiting · ADR 0005 same-origin API proxy · ADR 0006 guardian-managed learners · ADR 0007 RBAC matrix in code · ADR 0008 curriculum model and publishing gates

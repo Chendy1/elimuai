@@ -6,6 +6,18 @@ export function errorMessage(data: unknown, status: number): string {
   if (data && typeof data === "object" && "detail" in data) {
     const detail = (data as { detail: unknown }).detail;
     if (typeof detail === "string") return detail;
+    if (detail && typeof detail === "object" && !Array.isArray(detail) && "message" in detail) {
+      const d = detail as { message: unknown; details?: { sources?: unknown; unapproved?: unknown } };
+      let text = typeof d.message === "string" ? d.message : GENERIC_ERROR;
+      if (Array.isArray(d.details?.sources)) text += " Sources: " + d.details.sources.join(", ") + ".";
+      if (d.details?.unapproved && typeof d.details.unapproved === "object") {
+        const parts = Object.entries(d.details.unapproved as Record<string, number>)
+          .filter(([, n]) => n > 0)
+          .map(([k, n]) => `${n} ${k.replace("_", " ")}`);
+        if (parts.length) text += " Still to approve: " + parts.join(", ") + ".";
+      }
+      return text;
+    }
     if (Array.isArray(detail) && detail.length > 0) {
       const first = detail[0] as { msg?: unknown; loc?: unknown };
       const loc = Array.isArray(first.loc) ? first.loc.map(String) : [];

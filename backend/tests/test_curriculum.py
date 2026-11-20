@@ -96,7 +96,10 @@ def test_admin_curriculum_endpoints_are_permission_protected(client, db_engine, 
     c, h = admin
     ids = make_tree(c, h, make_curriculum(c, h))
     reviewer, rh = session_as(db_engine, "rev@example.com", "content_reviewer")
-    assert reviewer.get(f"{BASE}/curricula").status_code == 403  # cannot manage structure
+    assert reviewer.get(f"{BASE}/curricula").status_code == 200  # may read what they review
+    assert reviewer.get(f"{BASE}/versions/{ids['version']}/tree").status_code == 200
+    assert post(reviewer, rh, f"{BASE}/curricula", {"code": "y-cbe", "name": "Y"}).status_code == 403
+    assert guardian.get(f"{BASE}/versions/{ids['version']}/tree").status_code == 403
     assert post(reviewer, rh, f"{BASE}/review",
                 {"kind": "strand", "id": ids["strand"], "status": "in_review"}).status_code == 204
     assert post(reviewer, rh, f"{BASE}/versions/{ids['version']}/publish", {}).status_code == 403
@@ -317,3 +320,29 @@ def test_curriculum_actions_are_audited(admin, db_engine):
         actions = {r[0] for r in conn.execute(text("SELECT action FROM audit_logs"))}
     assert {"curriculum.created", "curriculum.version_created", "curriculum.review_set",
             "curriculum.version_published"} <= actions
+
+
+def test_approving_without_a_comment_keeps_the_existing_notes(admin):
+    c, h = admin
+    ids = make_tree(c, h, make_curriculum(c, h))
+    post(c, h, f"{BASE}/review",
+         {"kind": "sub_strand", "id": ids["sub"], "status": "in_review", "comment": "Importer note"})
+    post(c, h, f"{BASE}/review", {"kind": "sub_strand", "id": ids["sub"], "status": "approved"})
+    sub = tree_area(c, ids["version"])["strands"][0]["sub_strands"][0]
+    assert sub["review_status"] == "approved" and sub["review_comment"] == "Importer note"
+
+
+def test_a_source_page_can_be_read_by_id_with_neighbours(admin, db_engine):
+    c, h = admin
+    src = post(c, h, f"{BASE}/sources", {"title": "Demo design", "publisher": "P", "file_sha256": "c" * 64}).json()
+    with Session(db_engine) as db:
+        ids = [add_source_page(db, uuid.UUID(src["id"]), n, str(n), f"Demo page {n}").id for n in (1, 2, 3)]
+    reviewer, _ = session_as(db_engine, "rev2@example.com", "content_reviewer")
+    mid = reviewer.get(f"{BASE}/source-pages/{ids[1]}").json()
+    assert mid["text"] == "Demo page 2" and mid["pdf_page"] == 2 and mid["source_title"] == "Demo design"
+    assert mid["license_status"] == "not_requested"
+    assert mid["previous_page_id"] == str(ids[0]) and mid["next_page_id"] == str(ids[2])
+    assert reviewer.get(f"{BASE}/source-pages/{ids[0]}").json()["previous_page_id"] is None
+    assert reviewer.get(f"{BASE}/source-pages/{uuid.uuid4()}").status_code == 404
+    guardian, _ = session_as(db_engine, "g2@example.com")
+    assert guardian.get(f"{BASE}/source-pages/{ids[1]}").status_code == 403

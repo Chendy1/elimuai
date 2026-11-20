@@ -112,22 +112,22 @@ def _check_source_page(db: Session, source_page_id: uuid.UUID | None) -> None:
 
 # ---------- creating structure ----------
 
-def create_curriculum(db: Session, actor: User, code: str, name: str, country_code: str) -> Curriculum:
+def create_curriculum(db: Session, actor: User | None, code: str, name: str, country_code: str) -> Curriculum:
     row = Curriculum(code=code, name=name, country_code=country_code)
     db.add(row)
     _flush(db, "A curriculum with that code already exists.")
-    audit.record(db, actor_id=actor.id, action="curriculum.created", target_type="curriculum", target_id=str(row.id))
+    audit.record(db, actor_id=actor.id if actor else None, action="curriculum.created", target_type="curriculum", target_id=str(row.id))
     _commit(db, "A curriculum with that code already exists.")
     return row
 
 
-def create_version(db: Session, actor: User, curriculum_id: uuid.UUID, label: str) -> CurriculumVersion:
+def create_version(db: Session, actor: User | None, curriculum_id: uuid.UUID, label: str) -> CurriculumVersion:
     if db.get(Curriculum, curriculum_id) is None:
         raise NotFound
     row = CurriculumVersion(curriculum_id=curriculum_id, label=label)
     db.add(row)
     _flush(db, "That curriculum already has a version with that label.")
-    audit.record(db, actor_id=actor.id, action="curriculum.version_created", target_type="curriculum_version", target_id=str(row.id))
+    audit.record(db, actor_id=actor.id if actor else None, action="curriculum.version_created", target_type="curriculum_version", target_id=str(row.id))
     _commit(db, "That curriculum already has a version with that label.")
     return row
 
@@ -267,7 +267,8 @@ def set_review(db: Session, reviewer: User, kind: str, node_id: uuid.UUID, statu
         raise NotFound
     _draft_version_of(db, kind, node_id)
     node.review_status = status
-    node.review_comment = comment
+    if comment is not None:  # approving without a comment keeps the importer's notes
+        node.review_comment = comment
     node.reviewed_by_id = reviewer.id
     node.reviewed_at = utcnow()
     audit.record(db, actor_id=reviewer.id, action="curriculum.review_set", target_type=kind,
@@ -538,3 +539,21 @@ def public_area_tree(db: Session, curriculum_code: str, area_id: uuid.UUID) -> d
     if area is None:
         raise NotFound
     return build_area_tree(db, area, admin=False)
+
+
+def source_page_detail(db: Session, page_id: uuid.UUID) -> dict[str, Any]:
+    page = db.get(CurriculumSourcePage, page_id)
+    if page is None:
+        raise NotFound
+    source = db.get(CurriculumSource, page.source_id)
+
+    def neighbour(pdf_page: int) -> uuid.UUID | None:
+        return db.scalar(select(CurriculumSourcePage.id).where(
+            CurriculumSourcePage.source_id == page.source_id, CurriculumSourcePage.pdf_page == pdf_page))
+
+    return {
+        "id": page.id, "source_id": page.source_id, "source_title": source.title,
+        "license_status": source.license_status, "pdf_page": page.pdf_page,
+        "printed_page": page.printed_page, "text": page.text,
+        "previous_page_id": neighbour(page.pdf_page - 1), "next_page_id": neighbour(page.pdf_page + 1),
+    }
