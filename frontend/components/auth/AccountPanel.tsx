@@ -38,6 +38,11 @@ export default function AccountPanel() {
         Your guardian account is ready. You can add learners now. Starting lessons is coming soon.
       </p>
       <p>
+        <Link href="/learn" className="font-semibold text-forest underline">
+          Start learning
+        </Link>
+      </p>
+      <p>
         <Link href="/learners" className="font-semibold text-forest underline">
           Manage your learners
         </Link>

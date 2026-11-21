@@ -1,6 +1,6 @@
 # PROJECT_STATE
 
-**Current:** Phase 3.4 (edit sub-strands and strands; edit form in the review screen) delivered, awaiting verification. 3.2/3.3 verified by owner up to the dry run (113 backend tests, 97 outcomes parsed); review screens and frontend tests still to be confirmed.
+**Current:** Phase 4.1 (learner navigation: Learn page, subject page, topic overview, staff preview, source attribution) delivered, awaiting verification. PR #9 (PDF import, parser, review screens, editing) merged to main with CI green.
 **Decision (owner):** KICD permission will be requested before deployment/go-live. Until then curriculum data stays in the local development database only; the publishing gate stays enforced in code. Draft letter prepared.
 **Next:** 3.2c English parser (themes layout), content editing screen, then Phase 4 (lessons and learner navigation).
 

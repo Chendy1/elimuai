@@ -91,6 +91,14 @@ export default function VersionReview({ versionId }: { versionId: string }) {
         </p>
         <h1 className="mt-1 text-3xl font-bold text-forest">{"Review: " + tree.label}</h1>
         <p className="mt-1 text-muted">{"Version status: " + tree.status}</p>
+        <p className="mt-1">
+          <Link
+            href={`/learn?version=${tree.id}&grade=${tree.grades[0]?.level ?? 6}`}
+            className="font-semibold text-forest underline"
+          >
+            Preview as a learner
+          </Link>
+        </p>
       </div>
 
       {readOnly ? (

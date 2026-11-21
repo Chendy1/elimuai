@@ -65,3 +65,6 @@ Learner reads (signed in, published only): GET `/curriculum/grades`, `/curriculu
 
 ### Editing (Phase 3.4)
 `PATCH /admin/curriculum/sub-strands/{id}` and `PATCH /admin/curriculum/strands/{id}` (`curriculum:manage` + CSRF). Only the fields sent change; a list that is sent replaces the whole list. Any edit resets the record to `draft`, writes a `curriculum.*_edited` audit event (field names only) and is refused on published or archived versions.
+
+### Learner reads and staff preview (Phase 4.1)
+`GET /curriculum/grades`, `/curriculum/grades/{level}/learning-areas`, `/curriculum/learning-areas/{id}` show only the published version, only approved and non-archived content, and only to signed-in users. Reviewers and admins may add `?version_id=` to preview ANY version (draft included); anyone else gets 403. The area response also lists `sources` (title and publisher, never licence details) for attribution and, for previews, the version's label and status.

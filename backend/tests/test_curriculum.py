@@ -416,3 +416,42 @@ def test_editing_a_strand_renames_it_replaces_the_rubric_and_resets_review(admin
     assert r.status_code == 200 and r.json()["review_status"] == "draft"
     strand = tree_area(c, ids["version"])["strands"][0]
     assert strand["name"] == "Better name" and len(strand["rubric"]) == 2
+
+
+def test_staff_can_preview_an_unpublished_version_but_learners_cannot(admin, db_engine):
+    c, h = admin
+    src = post(c, h, f"{BASE}/sources", {"title": "Demo design", "publisher": "Demo publisher", "file_sha256": "d" * 64}).json()
+    with Session(db_engine) as db:
+        page_id = str(add_source_page(db, uuid.UUID(src["id"]), 1, "1", "Demo page").id)
+    ids = make_tree(c, h, make_curriculum(c, h, "kenya-cbe"), source_page_id=page_id)
+    v = ids["version"]
+    reviewer, _ = session_as(db_engine, "rev4@example.com", "content_reviewer")
+    guardian, _ = session_as(db_engine, "g4@example.com")
+
+    assert guardian.get(f"/curriculum/grades?version_id={v}").status_code == 403
+    assert guardian.get("/curriculum/grades").status_code == 404  # nothing is published
+    assert guardian.get(f"/curriculum/learning-areas/{ids['area']}").status_code == 404
+
+    assert reviewer.get(f"/curriculum/grades?version_id={v}").json() == [{"level": 6, "name": "Grade 6"}]
+    areas = reviewer.get(f"/curriculum/grades/6/learning-areas?version_id={v}").json()
+    assert [a["name"] for a in areas] == ["Demo Area"]  # still a draft, visible only in preview
+    tree = reviewer.get(f"/curriculum/learning-areas/{ids['area']}?version_id={v}").json()
+    assert tree["version"]["status"] == "draft"
+    assert tree["sources"] == [{"title": "Demo design", "publisher": "Demo publisher"}]
+    assert "review_status" not in tree and "license_status" not in str(tree)
+    assert tree["strands"][0]["sub_strands"][0]["outcomes"][0]["text"] == "Demo outcome one"
+
+    assert reviewer.get(f"/curriculum/grades?version_id={uuid.uuid4()}").status_code == 404
+    assert reviewer.get(f"/curriculum/learning-areas/{uuid.uuid4()}?version_id={v}").status_code == 404
+
+
+def test_a_preview_of_one_version_cannot_read_another_versions_area(admin, db_engine):
+    c, h = admin
+    cid = make_curriculum(c, h, "kenya-cbe")
+    first = make_tree(c, h, cid, label="One")
+    second = make_tree(c, h, cid, label="Two")
+    reviewer, _ = session_as(db_engine, "rev5@example.com", "content_reviewer")
+    ok = reviewer.get(f"/curriculum/learning-areas/{first['area']}?version_id={first['version']}")
+    assert ok.status_code == 200
+    wrong = reviewer.get(f"/curriculum/learning-areas/{first['area']}?version_id={second['version']}")
+    assert wrong.status_code == 404
