@@ -7,6 +7,7 @@ import type { Found, NodeKind } from "@/lib/curriculumTree";
 import type { ReviewStatus } from "@/lib/types";
 import StatusBadge from "./StatusBadge";
 import SourcePanel from "./SourcePanel";
+import SubStrandEditor from "./SubStrandEditor";
 
 function List({ title, items }: { title: string; items: string[] }) {
   if (items.length === 0) return null;
@@ -31,6 +32,7 @@ export default function NodeDetail({
   found,
   csrf,
   canReview,
+  canEdit,
   readOnly,
   onReviewed,
 }: {
@@ -38,6 +40,7 @@ export default function NodeDetail({
   found: Found;
   csrf: string;
   canReview: boolean;
+  canEdit: boolean;
   readOnly: boolean;
   onReviewed: () => void;
 }) {
@@ -45,6 +48,7 @@ export default function NodeDetail({
   const [comment, setComment] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [editing, setEditing] = useState(false);
 
   const title =
     kind === "sub_strand"
@@ -83,7 +87,19 @@ export default function NodeDetail({
         </div>
       ) : null}
 
-      {sub ? (
+      {sub && canEdit && !readOnly && !editing ? (
+        <button type="button" onClick={() => setEditing(true)}
+          className="rounded-full border-2 border-forest px-4 py-2 text-sm font-semibold text-forest hover:bg-sage">
+          Edit record
+        </button>
+      ) : null}
+
+      {sub && editing ? (
+        <SubStrandEditor sub={sub} csrf={csrf} onCancel={() => setEditing(false)}
+          onSaved={() => { setEditing(false); onReviewed(); }} />
+      ) : null}
+
+      {sub && !editing ? (
         <div className="space-y-4 rounded-xl bg-white p-5 shadow-card">
           <p className="text-sm text-muted">
             {sub.suggested_lessons !== null ? `${sub.suggested_lessons} suggested lessons` : "Lesson count not found"}

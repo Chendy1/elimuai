@@ -346,3 +346,73 @@ def test_a_source_page_can_be_read_by_id_with_neighbours(admin, db_engine):
     assert reviewer.get(f"{BASE}/source-pages/{uuid.uuid4()}").status_code == 404
     guardian, _ = session_as(db_engine, "g2@example.com")
     assert guardian.get(f"{BASE}/source-pages/{ids[1]}").status_code == 403
+
+
+# ---------- editing ----------
+
+def test_editing_a_sub_strand_replaces_lists_and_sends_it_back_to_draft(admin, db_engine):
+    c, h = admin
+    ids = make_tree(c, h, make_curriculum(c, h))
+    approve_all(c, h, ids)
+    url = f"{BASE}/sub-strands/{ids['sub']}"
+    r = c.patch(url, headers=h, json={
+        "name": "Renamed", "suggested_lessons": 9, "topics": ["New topic"],
+        "outcomes": [{"code": "a", "text": "Fixed outcome"}],
+        "competencies": [{"code": "citizenship", "description": "Demo"}],
+        "values": [{"name": "unity"}, {"name": "Peace"}],
+    })
+    assert r.status_code == 200 and r.json()["review_status"] == "draft"
+    sub = tree_area(c, ids["version"])["strands"][0]["sub_strands"][0]
+    assert sub["name"] == "Renamed" and sub["suggested_lessons"] == 9
+    assert sub["topics"] == ["New topic"]
+    assert sub["outcomes"] == [{"code": "a", "text": "Fixed outcome"}]
+    assert [x["code"] for x in sub["competencies"]] == ["citizenship"]
+    assert sorted(v["name"] for v in sub["values"]) == ["Peace", "Unity"]
+    assert sub["experiences"] == ["Demo experience"]  # not sent, so untouched
+    assert sub["review_status"] == "draft"
+    with db_engine.connect() as conn:
+        assert conn.execute(text("SELECT count(*) FROM curriculum_values")).scalar() == 2
+        details = conn.execute(text(
+            "SELECT details::text FROM audit_logs WHERE action = 'curriculum.sub_strand_edited'")).scalar_one()
+    assert "outcomes" in details and "Fixed outcome" not in details  # field names only, no content
+
+
+def test_edits_are_validated_atomic_and_permission_checked(admin, db_engine):
+    c, h = admin
+    ids = make_tree(c, h, make_curriculum(c, h))
+    url = f"{BASE}/sub-strands/{ids['sub']}"
+    assert c.patch(url, headers=h, json={}).status_code == 422
+    bad = c.patch(url, headers=h, json={"name": "Half done", "competencies": [{"code": "made_up"}]})
+    assert bad.status_code == 409
+    sub = tree_area(c, ids["version"])["strands"][0]["sub_strands"][0]
+    assert sub["name"] == "Demo Sub-strand"  # nothing was applied
+    too_long = c.patch(url, headers=h, json={"values": [{"name": "x" * 101}]})
+    assert too_long.status_code == 409
+    assert c.patch(f"{BASE}/sub-strands/{uuid.uuid4()}", headers=h, json={"name": "X"}).status_code == 404
+
+    reviewer, rh = session_as(db_engine, "rev3@example.com", "content_reviewer")
+    assert reviewer.patch(url, headers=rh, json={"name": "Nope"}).status_code == 403
+    assert c.patch(url, json={"name": "No csrf"}).status_code == 403
+
+
+def test_published_versions_cannot_be_edited(admin):
+    c, h = admin
+    ids = make_tree(c, h, make_curriculum(c, h))
+    approve_all(c, h, ids)
+    post(c, h, f"{BASE}/versions/{ids['version']}/publish", {})
+    assert c.patch(f"{BASE}/sub-strands/{ids['sub']}", headers=h, json={"name": "Late"}).status_code == 409
+    assert c.patch(f"{BASE}/strands/{ids['strand']}", headers=h, json={"name": "Late"}).status_code == 409
+
+
+def test_editing_a_strand_renames_it_replaces_the_rubric_and_resets_review(admin):
+    c, h = admin
+    ids = make_tree(c, h, make_curriculum(c, h))
+    approve(c, h, "strand", ids["strand"])
+    r = c.patch(f"{BASE}/strands/{ids['strand']}", headers=h, json={
+        "name": "Better name",
+        "rubric": [{"indicator": "I1", "exceeds": "a", "meets": "b", "approaches": "c", "below": "d"},
+                   {"indicator": "I2", "exceeds": "e", "meets": "f", "approaches": "g", "below": "h"}],
+    })
+    assert r.status_code == 200 and r.json()["review_status"] == "draft"
+    strand = tree_area(c, ids["version"])["strands"][0]
+    assert strand["name"] == "Better name" and len(strand["rubric"]) == 2

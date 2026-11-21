@@ -130,6 +130,20 @@ def create_sub_strand(strand_id: uuid.UUID, body: s.SubStrandCreate, ctx: AuthCo
     return {"id": sub.id, "number": sub.number, "name": sub.name}
 
 
+@router.patch("/sub-strands/{sub_strand_id}")
+def edit_sub_strand(sub_strand_id: uuid.UUID, body: s.SubStrandUpdate, ctx: AuthContext = MANAGE,
+                    db: Session = Depends(get_db)):
+    sub = call(svc.update_sub_strand, db, ctx.user, sub_strand_id, body)
+    return {"id": sub.id, "number": sub.number, "name": sub.name, "review_status": sub.review_status}
+
+
+@router.patch("/strands/{strand_id}")
+def edit_strand(strand_id: uuid.UUID, body: s.StrandUpdate, ctx: AuthContext = MANAGE,
+                db: Session = Depends(get_db)):
+    st = call(svc.update_strand, db, ctx.user, strand_id, body)
+    return {"id": st.id, "number": st.number, "name": st.name, "review_status": st.review_status}
+
+
 # ---- review ----
 
 @router.post("/review", status_code=204)

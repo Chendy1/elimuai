@@ -124,6 +124,7 @@ export default function VersionReview({ versionId }: { versionId: string }) {
               found={found}
               csrf={csrf}
               canReview={hasAnyRole(roles, REVIEW_ROLES)}
+              canEdit={hasAnyRole(roles, PUBLISH_ROLES)}
               readOnly={readOnly}
               onReviewed={refresh}
             />

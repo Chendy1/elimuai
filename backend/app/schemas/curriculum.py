@@ -1,7 +1,7 @@
 import uuid
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 def _clean(v: str) -> str:
@@ -117,3 +117,37 @@ class SourceCreate(BaseModel):
 class LicenseUpdate(BaseModel):
     license_status: Literal["not_requested", "requested", "granted", "denied"]
     license_notes: str | None = Field(default=None, max_length=2000)
+
+
+class SubStrandUpdate(BaseModel):
+    """Only the fields that are sent are changed. A list that is sent replaces the whole list."""
+
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    number: str | None = Field(default=None, min_length=1, max_length=20)
+    suggested_lessons: int | None = Field(default=None, ge=0, le=500)
+    link_to_other_areas: str | None = None
+    topics: list[str] | None = Field(default=None, max_length=100)
+    outcomes: list[OutcomeIn] | None = Field(default=None, max_length=100)
+    experiences: list[str] | None = Field(default=None, max_length=100)
+    inquiry_questions: list[str] | None = Field(default=None, max_length=50)
+    competencies: list[CompetencyIn] | None = Field(default=None, max_length=7)
+    values: list[NamedItemIn] | None = Field(default=None, max_length=20)
+    pcis: list[NamedItemIn] | None = Field(default=None, max_length=20)
+
+    @model_validator(mode="after")
+    def _something_to_change(self) -> "SubStrandUpdate":
+        if not self.model_fields_set:
+            raise ValueError("Nothing to update.")
+        return self
+
+
+class StrandUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    number: str | None = Field(default=None, min_length=1, max_length=20)
+    rubric: list[RubricIn] | None = Field(default=None, max_length=100)
+
+    @model_validator(mode="after")
+    def _something_to_change(self) -> "StrandUpdate":
+        if not self.model_fields_set:
+            raise ValueError("Nothing to update.")
+        return self

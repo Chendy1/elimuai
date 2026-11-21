@@ -2,7 +2,7 @@ import uuid
 from collections import defaultdict
 from typing import Any
 
-from sqlalchemy import func, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -204,6 +204,10 @@ def create_strand(db: Session, area_id: uuid.UUID, body: Any) -> Strand:
 
 def _get_or_create_named(db: Session, model: Any, name: str) -> Any:
     name = name.strip()
+    limit = 100 if model is CurriculumValue else 150
+    if len(name) > limit:
+        db.rollback()
+        raise Conflict(f"A name is too long (limit {limit} characters): {name[:30]}...")
     found = db.scalar(select(model).where(func.lower(model.name) == name.lower()))
     if found is not None:
         return found
@@ -211,6 +215,57 @@ def _get_or_create_named(db: Session, model: Any, name: str) -> Any:
     db.add(row)
     db.flush()
     return row
+
+
+CHILD_FIELDS = frozenset(
+    {"topics", "outcomes", "experiences", "inquiry_questions", "competencies", "values", "pcis"}
+)
+
+
+def _write_children(db: Session, sub: SubStrand, body: Any, fields: Any) -> None:
+    """Write (or replace) the listed child collections of a sub-strand."""
+    if "topics" in fields:
+        db.execute(delete(Topic).where(Topic.sub_strand_id == sub.id))
+        for i, name in enumerate(body.topics):
+            db.add(Topic(sub_strand_id=sub.id, name=name, sort_order=i))
+    if "outcomes" in fields:
+        db.execute(delete(LearningOutcome).where(LearningOutcome.sub_strand_id == sub.id))
+        for i, o in enumerate(body.outcomes):
+            db.add(LearningOutcome(sub_strand_id=sub.id, code=o.code, text=o.text, sort_order=i))
+    if "experiences" in fields:
+        db.execute(delete(LearningExperience).where(LearningExperience.sub_strand_id == sub.id))
+        for i, text in enumerate(body.experiences):
+            db.add(LearningExperience(sub_strand_id=sub.id, text=text, sort_order=i))
+    if "inquiry_questions" in fields:
+        db.execute(delete(KeyInquiryQuestion).where(KeyInquiryQuestion.sub_strand_id == sub.id))
+        for i, text in enumerate(body.inquiry_questions):
+            db.add(KeyInquiryQuestion(sub_strand_id=sub.id, text=text, sort_order=i))
+    if "competencies" in fields:
+        db.execute(delete(SubStrandCompetency).where(SubStrandCompetency.sub_strand_id == sub.id))
+        seen: set[str] = set()
+        for c in body.competencies:
+            if db.get(CoreCompetency, c.code) is None:
+                db.rollback()
+                raise Conflict(f"Unknown core competency: {c.code}")
+            if c.code not in seen:
+                seen.add(c.code)
+                db.add(SubStrandCompetency(sub_strand_id=sub.id, competency_code=c.code, description=c.description))
+    if "values" in fields:
+        db.execute(delete(SubStrandValue).where(SubStrandValue.sub_strand_id == sub.id))
+        seen_ids: set[uuid.UUID] = set()
+        for v in body.values:
+            value = _get_or_create_named(db, CurriculumValue, v.name)
+            if value.id not in seen_ids:
+                seen_ids.add(value.id)
+                db.add(SubStrandValue(sub_strand_id=sub.id, value_id=value.id, description=v.description))
+    if "pcis" in fields:
+        db.execute(delete(SubStrandPci).where(SubStrandPci.sub_strand_id == sub.id))
+        seen_pcis: set[uuid.UUID] = set()
+        for p in body.pcis:
+            pci = _get_or_create_named(db, PertinentContemporaryIssue, p.name)
+            if pci.id not in seen_pcis:
+                seen_pcis.add(pci.id)
+                db.add(SubStrandPci(sub_strand_id=sub.id, pci_id=pci.id, description=p.description))
 
 
 def create_sub_strand(db: Session, strand_id: uuid.UUID, body: Any) -> SubStrand:
@@ -227,34 +282,7 @@ def create_sub_strand(db: Session, strand_id: uuid.UUID, body: Any) -> SubStrand
     except IntegrityError as exc:
         db.rollback()
         raise Conflict("That strand already has a sub-strand with that number.") from exc
-    for i, name in enumerate(body.topics):
-        db.add(Topic(sub_strand_id=sub.id, name=name, sort_order=i))
-    for i, o in enumerate(body.outcomes):
-        db.add(LearningOutcome(sub_strand_id=sub.id, code=o.code, text=o.text, sort_order=i))
-    for i, text in enumerate(body.experiences):
-        db.add(LearningExperience(sub_strand_id=sub.id, text=text, sort_order=i))
-    for i, text in enumerate(body.inquiry_questions):
-        db.add(KeyInquiryQuestion(sub_strand_id=sub.id, text=text, sort_order=i))
-    seen: set[str] = set()
-    for c in body.competencies:
-        if db.get(CoreCompetency, c.code) is None:
-            db.rollback()
-            raise Conflict(f"Unknown core competency: {c.code}")
-        if c.code not in seen:
-            seen.add(c.code)
-            db.add(SubStrandCompetency(sub_strand_id=sub.id, competency_code=c.code, description=c.description))
-    seen_ids: set[uuid.UUID] = set()
-    for v in body.values:
-        value = _get_or_create_named(db, CurriculumValue, v.name)
-        if value.id not in seen_ids:
-            seen_ids.add(value.id)
-            db.add(SubStrandValue(sub_strand_id=sub.id, value_id=value.id, description=v.description))
-    seen_ids = set()
-    for p in body.pcis:
-        pci = _get_or_create_named(db, PertinentContemporaryIssue, p.name)
-        if pci.id not in seen_ids:
-            seen_ids.add(pci.id)
-            db.add(SubStrandPci(sub_strand_id=sub.id, pci_id=pci.id, description=p.description))
+    _write_children(db, sub, body, CHILD_FIELDS)
     _commit(db, "Could not create that sub-strand.")
     return sub
 
@@ -557,3 +585,63 @@ def source_page_detail(db: Session, page_id: uuid.UUID) -> dict[str, Any]:
         "printed_page": page.printed_page, "text": page.text,
         "previous_page_id": neighbour(page.pdf_page - 1), "next_page_id": neighbour(page.pdf_page + 1),
     }
+
+
+# ---------- editing ----------
+
+def _reset_review(node: Any) -> None:
+    node.review_status = "draft"
+    node.reviewed_by_id = None
+    node.reviewed_at = None
+
+
+def update_sub_strand(db: Session, actor: User, sub_id: uuid.UUID, body: Any) -> SubStrand:
+    """Edit a draft sub-strand. Any edit sends it back to 'draft' so it must be reviewed again."""
+    sub = db.get(SubStrand, sub_id)
+    if sub is None:
+        raise NotFound
+    _draft_version_of(db, "sub_strand", sub_id)
+    fields = set(body.model_fields_set)
+    changed: list[str] = []
+    for attr in ("name", "number"):
+        value = getattr(body, attr)
+        if attr in fields and value is not None:
+            setattr(sub, attr, value)
+            changed.append(attr)
+    for attr in ("suggested_lessons", "link_to_other_areas"):
+        if attr in fields:
+            setattr(sub, attr, getattr(body, attr))
+            changed.append(attr)
+    lists = {f for f in fields & CHILD_FIELDS if getattr(body, f) is not None}
+    _write_children(db, sub, body, lists)
+    changed += sorted(lists)
+    _reset_review(sub)
+    audit.record(db, actor_id=actor.id, action="curriculum.sub_strand_edited", target_type="sub_strand",
+                 target_id=str(sub.id), details={"changed": changed})
+    _commit(db, "That strand already has a sub-strand with that number.")
+    return sub
+
+
+def update_strand(db: Session, actor: User, strand_id: uuid.UUID, body: Any) -> Strand:
+    strand = db.get(Strand, strand_id)
+    if strand is None:
+        raise NotFound
+    _draft_version_of(db, "strand", strand_id)
+    fields = set(body.model_fields_set)
+    changed: list[str] = []
+    for attr in ("name", "number"):
+        value = getattr(body, attr)
+        if attr in fields and value is not None:
+            setattr(strand, attr, value)
+            changed.append(attr)
+    if "rubric" in fields and body.rubric is not None:
+        db.execute(delete(RubricIndicator).where(RubricIndicator.strand_id == strand.id))
+        for i, r in enumerate(body.rubric):
+            db.add(RubricIndicator(strand_id=strand.id, indicator=r.indicator, exceeds=r.exceeds,
+                                   meets=r.meets, approaches=r.approaches, below=r.below, sort_order=i))
+        changed.append("rubric")
+    _reset_review(strand)
+    audit.record(db, actor_id=actor.id, action="curriculum.strand_edited", target_type="strand",
+                 target_id=str(strand.id), details={"changed": changed})
+    _commit(db, "Could not update that strand.")
+    return strand

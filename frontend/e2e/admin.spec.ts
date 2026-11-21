@@ -48,7 +48,11 @@ const PAGES: Record<string, object> = {
 };
 
 async function mockAdmin(page: Page, roles: string[]) {
-  const state = { tree: fakeTree(), reviews: [] as { body: Record<string, unknown>; csrf: string }[] };
+  const state = {
+    tree: fakeTree(),
+    reviews: [] as { body: Record<string, unknown>; csrf: string }[],
+    edits: [] as { body: Record<string, unknown>; csrf: string }[],
+  };
   await page.route("**/api/auth/me", (route) => route.fulfill(json(200, session(roles))));
   await page.route(/\/api\/admin\/curriculum\//, async (route) => {
     const req = route.request();
@@ -72,6 +76,12 @@ async function mockAdmin(page: Page, roles: string[]) {
       node.review_status = body.status;
       if (body.comment !== undefined) node.review_comment = body.comment;
       return route.fulfill({ status: 204 });
+    }
+    if (method === "PATCH" && path === "/sub-strands/x1") {
+      const body = req.postDataJSON() as Record<string, unknown>;
+      state.edits.push({ body, csrf: req.headers()["x-csrf-token"] ?? "" });
+      Object.assign(sub, body, { review_status: "draft" });
+      return route.fulfill(json(200, { id: "x1", number: "1.1", name: sub.name, review_status: "draft" }));
     }
     if (method === "POST" && path === "/versions/v1/publish") {
       const open = [area, strand, sub].filter((n) => n.review_status !== "approved").length;
@@ -158,4 +168,48 @@ test("reviewers cannot publish, admins can, and publishing explains what is miss
   }
   await admin.getByRole("button", { name: "Publish version" }).click();
   await expect(admin.getByText("Published. Learners can now see this version.")).toBeVisible();
+});
+
+test("a curriculum admin can edit a record, and it goes back to draft", async ({ page }) => {
+  const state = await mockAdmin(page, ["curriculum_admin"]);
+  await page.goto("/admin/curriculum/v1");
+  await page.getByRole("button", { name: /1\.1 Demo Sub-strand/ }).click();
+  await page.getByRole("button", { name: "Approve", exact: true }).click();
+  await expect(page.getByTestId("detail-status")).toHaveText("Approved");
+
+  await page.getByRole("button", { name: "Edit record" }).click();
+  await page.getByLabel("Topics").fill("Demo topic\nSecond topic");
+  await page.getByLabel("Specific learning outcomes").fill("a) Demo outcome one\nb) New outcome");
+  await page.getByRole("button", { name: "Save changes" }).click();
+
+  await expect(page.getByText("b) New outcome")).toBeVisible();
+  await expect(page.getByTestId("detail-status")).toHaveText("Draft");
+  expect(state.edits[0].csrf).toBe("csrf-test-token");
+  expect(state.edits[0].body).toEqual({
+    name: "Demo Sub-strand", suggested_lessons: 5, link_to_other_areas: null,
+    topics: ["Demo topic", "Second topic"],
+    outcomes: [{ code: "a", text: "Demo outcome one" }, { code: "b", text: "New outcome" }],
+    experiences: ["Demo experience"], inquiry_questions: ["What is a demo?"],
+    competencies: [{ code: "critical_thinking", description: "learner demos" }],
+    values: [{ name: "Unity", description: "together" }], pcis: [],
+  });
+});
+
+test("the edit form rejects unknown competencies before calling the API", async ({ page }) => {
+  const state = await mockAdmin(page, ["curriculum_admin"]);
+  await page.goto("/admin/curriculum/v1");
+  await page.getByRole("button", { name: /1\.1 Demo Sub-strand/ }).click();
+  await page.getByRole("button", { name: "Edit record" }).click();
+  await page.getByLabel("Core competencies").fill("Made up skill: x");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByText(/Unknown core competency: Made up skill/)).toBeVisible();
+  expect(state.edits).toHaveLength(0);
+});
+
+test("reviewers do not see the edit button", async ({ page }) => {
+  await mockAdmin(page, ["content_reviewer"]);
+  await page.goto("/admin/curriculum/v1");
+  await page.getByRole("button", { name: /1\.1 Demo Sub-strand/ }).click();
+  await expect(page.getByRole("heading", { name: "1.1 Demo Sub-strand" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Edit record" })).toHaveCount(0);
 });

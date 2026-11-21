@@ -57,6 +57,6 @@ docker compose exec backend python -m app.cli create-version --curriculum kenya-
 ```
 Then run `propose` (section 5) with the printed version id, and open **http://localhost:3000/admin/curriculum** signed in as a reviewer, curriculum admin or super admin.
 
-For each learning area, strand and sub-strand: pick it on the left, compare the draft record with the **source page** shown beside it (Previous and Next page buttons follow a table across pages), then choose **Approve**, **Needs changes** or **Mark in review**. A comment is optional; approving without one keeps the importer's notes. Fix wrong values through the admin API for now (an editing screen comes later) and re-review.
+For each learning area, strand and sub-strand: pick it on the left, compare the draft record with the **source page** shown beside it (Previous and Next page buttons follow a table across pages), then choose **Approve**, **Needs changes** or **Mark in review**. A comment is optional; approving without one keeps the importer's notes. Curriculum admins and super admins can fix wrong values with **Edit record** on a sub-strand (one box per list; separate experiences with a blank line). Saving sends the record back to draft, so it must be reviewed again.
 
 Publishing (curriculum admins and super admins only) is refused until every learning area, strand and sub-strand is approved **and** every source has its licence recorded as `granted`. The page tells you what is still missing.

@@ -1,4 +1,7 @@
 # Changelog
+## 0.12.0 (Phase 3.4)
+- Edit endpoints for sub-strands and strands (partial update, list replacement, reset to draft, audit by field name); Edit record form in the review screen; edit parsing helpers and tests.
+
 ## 0.11.0 (Phase 3.3)
 - Admin review UI (/admin/curriculum): version list, tree navigation, draft record beside its source page, approve / needs changes / in review, publish with explained failures. Reviewers can read curricula, versions, trees and source pages; approving without a comment keeps importer notes; GET /source-pages/{id}; CLI create-curriculum and create-version.
 
