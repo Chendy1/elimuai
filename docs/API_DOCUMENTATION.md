@@ -59,3 +59,9 @@ Admin endpoints are under `/admin/curriculum` (structure: `curriculum:manage`; r
 | GET/POST `/sources`, PATCH `/sources/{id}/license` | source documents and permission status |
 
 Learner reads (signed in, published only): GET `/curriculum/grades`, `/curriculum/grades/{level}/learning-areas`, `/curriculum/learning-areas/{id}`.
+
+### Source pages (Phase 3.2a)
+`GET /admin/curriculum/sources/{id}/pages?offset&limit` (page numbers and sizes) and `GET /admin/curriculum/sources/{id}/pages/{pdf_page}` (stored text). Permission `content:review`, so reviewers can read source pages next to draft records. Import itself is a CLI command (see `docs/CURRICULUM_IMPORT_GUIDE.md`).
+
+### Editing (Phase 3.4)
+`PATCH /admin/curriculum/sub-strands/{id}` and `PATCH /admin/curriculum/strands/{id}` (`curriculum:manage` + CSRF). Only the fields sent change; a list that is sent replaces the whole list. Any edit resets the record to `draft`, writes a `curriculum.*_edited` audit event (field names only) and is refused on published or archived versions.

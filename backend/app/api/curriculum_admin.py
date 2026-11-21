@@ -1,14 +1,14 @@
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_permission
 from app.core.permissions import P_CONTENT_PUBLISH, P_CONTENT_REVIEW, P_CURRICULUM_MANAGE
 from app.db.session import get_db
-from app.models import Curriculum, CurriculumSource, CurriculumVersion
+from app.models import Curriculum, CurriculumSource, CurriculumSourcePage, CurriculumVersion
 from app.schemas import curriculum as s
 from app.services import curriculum as svc
 from app.services.auth import AuthContext
@@ -18,6 +18,7 @@ router = APIRouter(prefix="/admin/curriculum", tags=["curriculum-admin"])
 READ = Depends(require_permission(P_CURRICULUM_MANAGE))
 MANAGE = Depends(require_permission(P_CURRICULUM_MANAGE, csrf=True))
 REVIEW = Depends(require_permission(P_CONTENT_REVIEW, csrf=True))
+REVIEW_READ = Depends(require_permission(P_CONTENT_REVIEW))
 PUBLISH = Depends(require_permission(P_CONTENT_PUBLISH, csrf=True))
 
 
@@ -48,7 +49,7 @@ def _source(r: CurriculumSource) -> dict[str, Any]:
 # ---- curricula and versions ----
 
 @router.get("/curricula")
-def list_curricula(ctx: AuthContext = READ, db: Session = Depends(get_db)):
+def list_curricula(ctx: AuthContext = REVIEW_READ, db: Session = Depends(get_db)):
     return [_curriculum(c) for c in db.scalars(select(Curriculum).order_by(Curriculum.code))]
 
 
@@ -58,7 +59,7 @@ def create_curriculum(body: s.CurriculumCreate, ctx: AuthContext = MANAGE, db: S
 
 
 @router.get("/curricula/{curriculum_id}/versions")
-def list_versions(curriculum_id: uuid.UUID, ctx: AuthContext = READ, db: Session = Depends(get_db)):
+def list_versions(curriculum_id: uuid.UUID, ctx: AuthContext = REVIEW_READ, db: Session = Depends(get_db)):
     rows = db.scalars(select(CurriculumVersion).where(CurriculumVersion.curriculum_id == curriculum_id)
                       .order_by(CurriculumVersion.created_at))
     return [_version(v) for v in rows]
@@ -71,7 +72,7 @@ def create_version(curriculum_id: uuid.UUID, body: s.VersionCreate, ctx: AuthCon
 
 
 @router.get("/versions/{version_id}/tree")
-def version_tree(version_id: uuid.UUID, ctx: AuthContext = READ, db: Session = Depends(get_db)):
+def version_tree(version_id: uuid.UUID, ctx: AuthContext = REVIEW_READ, db: Session = Depends(get_db)):
     return call(svc.version_tree, db, version_id)
 
 
@@ -129,6 +130,20 @@ def create_sub_strand(strand_id: uuid.UUID, body: s.SubStrandCreate, ctx: AuthCo
     return {"id": sub.id, "number": sub.number, "name": sub.name}
 
 
+@router.patch("/sub-strands/{sub_strand_id}")
+def edit_sub_strand(sub_strand_id: uuid.UUID, body: s.SubStrandUpdate, ctx: AuthContext = MANAGE,
+                    db: Session = Depends(get_db)):
+    sub = call(svc.update_sub_strand, db, ctx.user, sub_strand_id, body)
+    return {"id": sub.id, "number": sub.number, "name": sub.name, "review_status": sub.review_status}
+
+
+@router.patch("/strands/{strand_id}")
+def edit_strand(strand_id: uuid.UUID, body: s.StrandUpdate, ctx: AuthContext = MANAGE,
+                db: Session = Depends(get_db)):
+    st = call(svc.update_strand, db, ctx.user, strand_id, body)
+    return {"id": st.id, "number": st.number, "name": st.name, "review_status": st.review_status}
+
+
 # ---- review ----
 
 @router.post("/review", status_code=204)
@@ -152,3 +167,33 @@ def create_source(body: s.SourceCreate, ctx: AuthContext = MANAGE, db: Session =
 def set_license(source_id: uuid.UUID, body: s.LicenseUpdate, ctx: AuthContext = MANAGE,
                 db: Session = Depends(get_db)):
     return _source(call(svc.set_license, db, ctx.user, source_id, body.license_status, body.license_notes))
+
+
+# ---- reading stored source pages (reviewers need these next to the draft records) ----
+
+@router.get("/sources/{source_id}/pages")
+def list_source_pages(source_id: uuid.UUID, offset: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=500),
+                      ctx: AuthContext = REVIEW_READ, db: Session = Depends(get_db)):
+    if db.get(CurriculumSource, source_id) is None:
+        raise HTTPException(status_code=404, detail="Not found.")
+    rows = db.execute(
+        select(CurriculumSourcePage.pdf_page, CurriculumSourcePage.printed_page, func.length(CurriculumSourcePage.text))
+        .where(CurriculumSourcePage.source_id == source_id)
+        .order_by(CurriculumSourcePage.pdf_page).offset(offset).limit(limit)
+    )
+    return [{"pdf_page": r[0], "printed_page": r[1], "characters": r[2]} for r in rows]
+
+
+@router.get("/sources/{source_id}/pages/{pdf_page}")
+def get_source_page(source_id: uuid.UUID, pdf_page: int, ctx: AuthContext = REVIEW_READ,
+                    db: Session = Depends(get_db)):
+    row = db.scalar(select(CurriculumSourcePage).where(
+        CurriculumSourcePage.source_id == source_id, CurriculumSourcePage.pdf_page == pdf_page))
+    if row is None:
+        raise HTTPException(status_code=404, detail="Not found.")
+    return {"source_id": row.source_id, "pdf_page": row.pdf_page, "printed_page": row.printed_page, "text": row.text}
+
+
+@router.get("/source-pages/{page_id}")
+def source_page(page_id: uuid.UUID, ctx: AuthContext = REVIEW_READ, db: Session = Depends(get_db)):
+    return call(svc.source_page_detail, db, page_id)

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { hasAnyRole, REVIEW_ROLES } from "@/lib/curriculumTree";
 import type { SessionData } from "@/lib/types";
 
 export default function AccountPanel() {
@@ -41,6 +42,13 @@ export default function AccountPanel() {
           Manage your learners
         </Link>
       </p>
+      {hasAnyRole(session.roles, REVIEW_ROLES) ? (
+        <p>
+          <Link href="/admin/curriculum" className="font-semibold text-forest underline">
+            Curriculum review
+          </Link>
+        </p>
+      ) : null}
       <button
         type="button"
         onClick={signOut}
