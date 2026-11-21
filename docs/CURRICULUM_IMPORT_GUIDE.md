@@ -60,3 +60,7 @@ Then run `propose` (section 5) with the printed version id, and open **http://lo
 For each learning area, strand and sub-strand: pick it on the left, compare the draft record with the **source page** shown beside it (Previous and Next page buttons follow a table across pages), then choose **Approve**, **Needs changes** or **Mark in review**. A comment is optional; approving without one keeps the importer's notes. Curriculum admins and super admins can fix wrong values with **Edit record** on a sub-strand (one box per list; separate experiences with a blank line). Saving sends the record back to draft, so it must be reviewed again.
 
 Publishing (curriculum admins and super admins only) is refused until every learning area, strand and sub-strand is approved **and** every source has its licence recorded as `granted`. The page tells you what is still missing.
+
+## 7. See it as a learner would (Phase 4.1)
+
+On the review screen, **Preview as a learner** opens `/learn?version=VERSION_ID&grade=6`. Reviewers and admins can preview any version, draft included; learners only ever see a published one. Each topic page shows its source line, which is how the permission letter promises attribution.

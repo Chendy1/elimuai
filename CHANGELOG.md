@@ -1,4 +1,7 @@
 # Changelog
+## 0.13.0 (Phase 4.1)
+- /learn and /learn/area/[id]: learner profile picks the grade, subject cards, strands and topics, topic overview (outcomes, topics, inquiry questions), source attribution; staff preview of any version via ?version_id; Learn link in header and account page.
+
 ## 0.12.0 (Phase 3.4)
 - Edit endpoints for sub-strands and strands (partial update, list replacement, reset to draft, audit by field name); Edit record form in the review screen; edit parsing helpers and tests.
 

@@ -440,6 +440,18 @@ def _review(node: Any) -> dict[str, Any]:
     }
 
 
+def _sources_for(db: Session, page_ids: set[uuid.UUID]) -> list[dict[str, str]]:
+    """Which documents the records come from, for attribution. Licence details are never exposed."""
+    if not page_ids:
+        return []
+    rows = db.execute(
+        select(CurriculumSource.title, CurriculumSource.publisher)
+        .join(CurriculumSourcePage, CurriculumSourcePage.source_id == CurriculumSource.id)
+        .where(CurriculumSourcePage.id.in_(page_ids)).distinct().order_by(CurriculumSource.title)
+    )
+    return [{"title": t, "publisher": p} for t, p in rows]
+
+
 def build_area_tree(db: Session, area: LearningArea, admin: bool) -> dict[str, Any]:
     units = list(db.scalars(select(Unit).where(Unit.learning_area_id == area.id).order_by(Unit.sort_order, Unit.number)))
     strands = list(db.scalars(select(Strand).where(Strand.learning_area_id == area.id).order_by(Strand.sort_order, Strand.number)))
@@ -513,9 +525,11 @@ def build_area_tree(db: Session, area: LearningArea, admin: bool) -> dict[str, A
             d.update(_review(u))
         return d
 
+    page_ids = {area.source_page_id, *(st.source_page_id for st in strands), *(x.source_page_id for x in subs)}
     tree = {
         "id": area.id, "name": area.name, "sort_order": area.sort_order,
         "units": [unit_dict(u) for u in units], "strands": [strand_dict(s) for s in strands],
+        "sources": _sources_for(db, {p for p in page_ids if p is not None}),
     }
     if admin:
         tree.update(_review(area))
@@ -547,26 +561,28 @@ def public_grades(db: Session, version: CurriculumVersion) -> list[Grade]:
     return list(db.scalars(select(Grade).where(Grade.curriculum_version_id == version.id).order_by(Grade.level)))
 
 
-def public_areas(db: Session, version: CurriculumVersion, level: int) -> list[LearningArea]:
-    return list(db.scalars(
+def public_areas(db: Session, version: CurriculumVersion, level: int, preview: bool = False) -> list[LearningArea]:
+    query = (
         select(LearningArea).join(Grade, Grade.id == LearningArea.grade_id)
-        .where(Grade.curriculum_version_id == version.id, Grade.level == level,
-               LearningArea.archived_at.is_(None), LearningArea.review_status == "approved")
+        .where(Grade.curriculum_version_id == version.id, Grade.level == level, LearningArea.archived_at.is_(None))
         .order_by(LearningArea.sort_order, LearningArea.name)
-    ))
+    )
+    if not preview:  # learners only ever see approved content; staff previews show everything
+        query = query.where(LearningArea.review_status == "approved")
+    return list(db.scalars(query))
 
 
-def public_area_tree(db: Session, curriculum_code: str, area_id: uuid.UUID) -> dict[str, Any]:
+def public_area_tree(db: Session, version: CurriculumVersion, area_id: uuid.UUID) -> dict[str, Any]:
     area = db.scalar(
         select(LearningArea).join(Grade, Grade.id == LearningArea.grade_id)
-        .join(CurriculumVersion, CurriculumVersion.id == Grade.curriculum_version_id)
-        .join(Curriculum, Curriculum.id == CurriculumVersion.curriculum_id)
-        .where(LearningArea.id == area_id, Curriculum.code == curriculum_code,
-               CurriculumVersion.status == "published", LearningArea.archived_at.is_(None))
+        .where(LearningArea.id == area_id, Grade.curriculum_version_id == version.id,
+               LearningArea.archived_at.is_(None))
     )
     if area is None:
         raise NotFound
-    return build_area_tree(db, area, admin=False)
+    tree = build_area_tree(db, area, admin=False)
+    tree["version"] = {"id": version.id, "label": version.label, "status": version.status}
+    return tree
 
 
 def source_page_detail(db: Session, page_id: uuid.UUID) -> dict[str, Any]:
